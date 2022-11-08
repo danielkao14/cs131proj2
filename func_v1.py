@@ -1,4 +1,4 @@
-from intbase import InterpreterBase
+from intbase import InterpreterBase, ErrorType
 
 # FuncInfo is a class that represents information about a function
 # Right now, the only thing this tracks is the line number of the first executable instruction
@@ -26,12 +26,16 @@ class FunctionManager:
   def __init__(self, tokenized_program):
     self.func_cache = {}
     self._cache_function_line_numbers(tokenized_program)
+    self._parse_return_type(tokenized_program)
+    self._parse_param(tokenized_program)
     #write function to parse function parameters: store inside a tuple?
     #write function to parse function return type
 
   def get_function_info(self, func_name):
     if func_name not in self.func_cache:
       return None
+    print("This is the return type", self.func_cache[func_name].returntype)
+    print("This is the param type", self.func_cache[func_name].paramlist)
     return self.func_cache[func_name]
 
   def _cache_function_line_numbers(self, tokenized_program):
@@ -41,21 +45,21 @@ class FunctionManager:
         func_info = FuncInfo(line_num + 1)   # function starts executing on line after funcdef
         self.func_cache[func_name] = func_info
   
-  def _parse_return_type(self, tokenize_program):
+  def _parse_return_type(self, tokenized_program):
     for line in tokenized_program:
       if line and line[0] == InterpreterBase.FUNC_DEF:
-        func_name - line[1]
+        func_name = line[1]
         if (func_name not in self.func_cache):
-          super().error(ErrorType.SYNTAX_ERROR,"function does not exist to get return type") #no
+          InterpreterBase.error(ErrorType.SYNTAX_ERROR,"function does not exist to get return type") #no
         func_type = line[-1]
         self.func_cache[func_name].set_returntype(func_type)
 
-  def _parse_param(self, tokenize_program):
+  def _parse_param(self, tokenized_program):
     for line in tokenized_program:
       if line and line[0] == InterpreterBase.FUNC_DEF:
-        func_name - line[1]
+        func_name = line[1]
         if (func_name not in self.func_cache):
-          super().error(ErrorType.SYNTAX_ERROR,"function does not exist to get return type") #no
+          InterpreterBase.error(ErrorType.SYNTAX_ERROR,"function does not exist to get param type") #no
         for token in line[2:-1]:
           paramtype = token.split(":")[1]
           self.func_cache[func_name].set_param(paramtype)
