@@ -26,6 +26,21 @@ class Value:
   def type(self):
     return self.t
 
+class EnvStack:
+  def __init(self):
+    self.stack = []
+    self.resultdict = {"resulti": None, "results": None, "resultb": None }
+    self.local_env = EnvironmentManager()
+  
+  def append_env(self, environment):
+    self.stack.append(environment)
+  
+  def pop_env(self):
+    return self.stack.pop()
+  
+  def get_environment(self):
+    return self.stack
+
 # Main interpreter class
 class Interpreter(InterpreterBase):
   def __init__(self, console_output=True, input=None, trace_output=False):
@@ -41,6 +56,9 @@ class Interpreter(InterpreterBase):
     self.func_manager = FunctionManager(self.tokenized_program)
     self.ip = self._find_first_instruction(InterpreterBase.MAIN_FUNC)
     self.return_stack = []
+    self.env_stack_list = []
+    self.env_counter = -1
+    self.current_env = None
     self.terminate = False
     self.env_manager = EnvironmentManager() # used to track variables/scope
 
@@ -124,14 +142,20 @@ class Interpreter(InterpreterBase):
       self._strtoint(args[1:])
       self._advance_to_next_statement()
     else:
-      self.return_stack.append(self.ip+1)
+      self.env_counter += 1
+      environment_stack = EnvStack() #may be bug later with env variables and values local scoped?
+      #EnvStack contains environment stack, result dict, and local scope
+      self.env_stack_list.append(environment_stack)
+      self.return_stack.append((self.ip+1, self.env_counter)) #when a function is called, append it to function stack list
+      self.current_env = self.env_stack_list[self.env_counter] #set a new curent environment stack for other functions to refer to
+
       self.ip = self._find_first_instruction(args[0])
 
   def _endfunc(self):
     if not self.return_stack:  # done with main!
       self.terminate = True
     else:
-      self.ip = self.return_stack.pop()
+      self.ip = self.return_stack.pop()[0]
 
   def _if(self, args):
     if not args:
@@ -166,7 +190,7 @@ class Interpreter(InterpreterBase):
     super().error(ErrorType.SYNTAX_ERROR,"Missing endif", self.ip) #no
 
   def _return(self,args):
-    if not args:
+    if not args: #default return
       self._endfunc()
       return
     value_type = self._eval_expression(args)
